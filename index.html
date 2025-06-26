@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Research Paper Wizard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" defer></script>
+    <style>
+        :root {
+            --primary-color: #0d9488; /* teal-600 */
+            --secondary-color: #f59e0b; /* amber-500 */
+            --background-color: #f0f4f8; /* A custom light gray-blue */
+            --text-color: #111827; /* gray-900 */
+            --card-bg: #ffffff;
+        }
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--background-color); color: var(--text-color); }
+        .step { background-color: var(--card-bg); border-left: 4px solid #d1d5db; transition: all 0.3s ease-in-out; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); }
+        .step.active { border-left-color: var(--primary-color); box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -2px rgb(0 0 0 / 0.1); transform: scale(1.02); }
+        .step.completed { border-left-color: var(--secondary-color); }
+        .step-header { cursor: pointer; }
+        .step-content { display: none; padding-top: 1.5rem; }
+        .step.active .step-content { display: block; }
+        .ai-output { background-color: #f9fafb; border-left: 4px solid var(--primary-color); padding: 1rem; white-space: pre-wrap; font-family: 'Inter', sans-serif; line-height: 1.6; }
+        .final-paper-output { background: white; padding: 2rem 3rem; border-radius: 0.5rem; border: 1px solid #e2e8f0; font-family: 'Lora', serif; line-height: 1.8; color: #1f2937; position: relative; }
+        .final-paper-output h1 { font-family: 'Inter', sans-serif; font-size: 1.875rem; font-weight: 800; text-align: center; margin-bottom: 0.5rem; color: #111827; }
+        .final-paper-output h2 { font-family: 'Inter', sans-serif; font-size: 1.25rem; font-weight: 700; margin-top: 2rem; margin-bottom: 1rem; border-bottom: 2px solid #374151; padding-bottom: 0.5rem; color: #111827; }
+        .final-paper-output h3 { font-family: 'Inter', sans-serif; font-size: 1.125rem; font-weight: 700; margin-top: 1.5rem; margin-bottom: 0.75rem; color: #374151; }
+        .final-paper-output p { margin-bottom: 1.25rem; }
+        .final-paper-output ul { margin-left: 1.5rem; margin-bottom: 1.25rem; list-style-type: disc; }
+        .final-paper-output li { margin-bottom: 0.5rem; }
+        .final-paper-output .authors { text-align: center; font-style: italic; color: #4b5563; margin-bottom: 1.5rem; }
+        .final-paper-output .abstract { background-color: #f9fafb; padding: 1rem; border-radius: 0.25rem; margin-bottom: 2rem; font-style: italic; }
+        .final-paper-output .visual-placeholder { border: 2px dashed #9ca3af; padding: 1rem; margin: 1.5rem 0; text-align: left; font-family: 'Inter', sans-serif; font-weight: 500; background-color: #f9fafb; color: #4b5563; }
+        .final-paper-output .disclaimer { margin-top: 3rem; padding-top: 1rem; border-top: 1px solid #e5e7eb; font-size: 0.8rem; color: #6b7280; font-style: italic; }
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid var(--primary-color); border-radius: 50%; width: 32px; height: 32px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="text-gray-900">
+    <div class="container mx-auto p-4 md:p-8 max-w-4xl">
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <h1 class="text-5xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-teal-500 to-amber-500 tracking-tight">AI Research Paper Wizard</h1>
+            <p class="text-gray-500 mt-2 text-lg">Where Creative Excellence Meets Advanced AI.</p>
+        </header>
+
+        <!-- Step-by-Step Wizard -->
+        <div class="space-y-4" id="wizard-container">
+            <div id="step-1" class="step bg-white p-6 rounded-lg active">
+                <div class="step-header flex justify-between items-center">
+                    <h2 class="text-2xl font-bold text-gray-800">Step 1: Define Your Topic</h2>
+                    <i id="status-1" class="fas fa-edit text-teal-500"></i>
+                </div>
+                <div class="step-content" id="content-1">
+                    <label for="topicInput" class="block text-sm font-medium text-gray-700 mb-2 mt-4">Enter your research topic, abstract, or main idea:</label>
+                    <textarea id="topicInput" rows="3" class="w-full border-gray-300 rounded-lg shadow-sm focus:ring-teal-500 focus:border-teal-500" placeholder="e.g., The impact of renewable energy adoption on economic growth in developing nations."></textarea>
+                    <div id="titleSuggestionOutput" class="ai-output mt-4 hidden"></div>
+                    <div class="mt-4 flex flex-wrap gap-2">
+                        <button id="suggestTitlesBtn" class="bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-lg shadow-sm hover:bg-gray-300">? Suggest Titles & Keywords</button>
+                        <button id="submitTopicBtn" class="bg-teal-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-teal-700">Confirm Topic & Proceed</button>
+                    </div>
+                </div>
+            </div>
+            <div id="step-2" class="step bg-white p-6 rounded-lg opacity-50">
+                <div class="step-header flex justify-between items-center">
+                    <h2 class="text-2xl font-bold text-gray-500">Step 2: Generate & Refine Outline</h2>
+                    <i id="status-2" class="fas fa-lock text-gray-400"></i>
+                </div>
+                <div class="step-content hidden" id="content-2">
+                    <div class="flex justify-end mb-4"><button id="generateOutlineBtn" class="bg-teal-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md"><i class="fas fa-lightbulb mr-2"></i>Generate Outline</button></div>
+                    <div id="outlineLoader" class="hidden mt-4"></div>
+                    <div id="outlineEditor" class="hidden mt-4"><textarea id="outlineTextarea" rows="12" class="w-full border-gray-300 rounded-lg shadow-sm"></textarea><div class="mt-4 flex justify-end"><button id="confirmOutlineBtn" class="bg-amber-500 text-white font-semibold py-2 px-4 rounded-lg">Confirm Outline & Proceed</button></div></div>
+                </div>
+            </div>
+            <div id="step-3" class="step bg-white p-6 rounded-lg opacity-50">
+                <div class="step-header flex justify-between items-center">
+                    <h2 class="text-2xl font-bold text-gray-500">Step 3: Add Key Points</h2>
+                    <i id="status-3" class="fas fa-lock text-gray-400"></i>
+                </div>
+                <div class="step-content hidden" id="content-3">
+                    <div class="flex justify-end"><button id="suggestMethodologyBtn" class="mb-4 bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-lg shadow-sm hover:bg-gray-300">? Suggest Methodologies</button></div>
+                    <div id="methodologySuggestionOutput" class="ai-output mb-4 hidden"></div>
+                    <div id="keyPointsContainer" class="space-y-4"></div>
+                    <div class="mt-4 flex justify-end"><button id="confirmKeyPointsBtn" class="bg-amber-500 text-white font-semibold py-2 px-4 rounded-lg">Confirm Key Points & Proceed</button></div>
+                </div>
+            </div>
+            <div id="step-4" class="step bg-white p-6 rounded-lg opacity-50">
+                <div class="step-header flex justify-between items-center">
+                    <h2 class="text-2xl font-bold text-gray-500">Step 4: Add Appendices (Optional)</h2>
+                    <i id="status-4" class="fas fa-lock text-gray-400"></i>
+                </div>
+                <div class="step-content hidden" id="content-4">
+                    <p class="text-sm text-gray-600 mb-4">Add content for any appendices. If left blank, the AI will generate samples.</p><div id="appendicesContainer" class="space-y-4"></div><div class="mt-4 flex justify-end gap-2"><button id="addAppendixBtn" class="text-sm bg-gray-200 text-gray-700 font-semibold py-2 px-3 rounded-lg"><i class="fas fa-plus mr-2"></i>Add Appendix</button><button id="confirmAppendicesBtn" class="bg-amber-500 text-white font-semibold py-2 px-4 rounded-lg">Confirm & Proceed</button></div>
+                </div>
+            </div>
+            <div id="step-5" class="step bg-white p-6 rounded-lg opacity-50">
+                 <div class="step-header flex justify-between items-center">
+                    <h2 class="text-2xl font-bold text-gray-500">Step 5: Generate Full Research Paper</h2>
+                     <i id="status-5" class="fas fa-lock text-gray-400"></i>
+                </div>
+                <div class="step-content hidden" id="content-5">
+                    <div class="flex justify-end"><button id="generatePaperBtn" class="bg-red-600 text-white font-bold py-3 px-6 rounded-lg shadow-xl"><i class="fas fa-file-invoice mr-2"></i>GENERATE FULL PAPER</button></div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="finalOutput" class="mt-8"></div>
+
+        <footer class="mt-12">
+            <div class="bg-gray-800 text-white rounded-lg shadow-2xl p-8 md:p-12">
+                <div class="text-center">
+                    <h3 class="text-2xl font-bold text-teal-300">About the Developer</h3>
+                    <p class="text-4xl font-extrabold text-white mt-1">Satyam Purohit</p>
+                    <p class="text-teal-200 text-lg">PhD Research Scholar, Shoolini University | MBA in Business Analytics, Chandigarh University</p>
+                    <a href="https://www.linkedin.com/in/satyam-purohit-745979275/" target="_blank" class="inline-block mt-4 bg-teal-500 text-white text-sm font-bold py-2 px-4 rounded-lg hover:bg-teal-600 transition-colors">
+                        <i class="fab fa-linkedin mr-2"></i>View LinkedIn Profile
+                    </a>
+                    <p class="mt-4 text-teal-100 font-light max-w-3xl mx-auto">
+                        Satyam is at the forefront of exploring innovative solutions at the intersection of technology and academia. His work is driven by a passion for making complex research processes more accessible and efficient for scholars worldwide. This AI Research Paper Wizard is a testament to his commitment to empowering the next generation of researchers.
+                    </p>
+                </div>
+            </div>
+        </footer>
+    </div>
+    
+    <div id="captcha-modal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center hidden z-50">
+        <div class="bg-white p-8 rounded-lg shadow-2xl w-full max-w-sm">
+            <h3 class="text-xl font-bold mb-4">Security Check</h3>
+            <p class="text-gray-600 mb-4">To prevent automated requests, please answer the simple math question below.</p>
+            <p id="captcha-question" class="text-2xl font-bold text-center my-4"></p>
+            <input type="number" id="captcha-input" class="w-full border-gray-300 rounded-lg shadow-sm text-center text-xl p-2" placeholder="Your Answer">
+            <div id="captcha-error" class="text-red-500 text-sm mt-2 text-center hidden">Incorrect answer. Please try again.</div>
+            <div class="mt-6 flex justify-end gap-3">
+                <button id="captcha-cancel" class="bg-gray-200 text-gray-700 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300">Cancel</button>
+                <button id="captcha-submit" class="bg-teal-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-teal-700">Submit</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const researchData = { topic: '', outline: '', keyPoints: {}, appendices: [] };
+            let captchaAnswer = 0;
+            
+            function updateStepUI(activeStep) {
+                document.querySelectorAll('.step').forEach((step, index) => {
+                    const stepNumber = index + 1;
+                    const content = step.querySelector('.step-content');
+                    const titleEl = step.querySelector('h2');
+                    const iconEl = document.getElementById(`status-${stepNumber}`);
+
+                    step.classList.remove('active', 'completed', 'opacity-50');
+                    titleEl.classList.remove('text-gray-800', 'text-gray-500', 'text-amber-600');
+                    if(content) content.style.display = 'none';
+
+                    if (stepNumber < activeStep) {
+                        step.classList.add('completed');
+                        titleEl.classList.add('text-amber-600');
+                        if (iconEl) iconEl.className = 'fas fa-check-circle text-amber-500';
+                    } else if (stepNumber === activeStep) {
+                        step.classList.add('active');
+                        titleEl.classList.add('text-gray-800');
+                        if (iconEl) iconEl.className = 'fas fa-edit text-teal-500';
+                        if (content) {
+                            content.style.display = 'block';
+                            setTimeout(() => step.scrollIntoView({ behavior: 'smooth', block: 'start' }), 200);
+                        }
+                    } else {
+                        step.classList.add('opacity-50');
+                        titleEl.classList.add('text-gray-500');
+                        if (iconEl) iconEl.className = 'fas fa-lock text-gray-400';
+                    }
+                });
+            }
+
+            async function callGemini(prompt, outputElement, onComplete) {
+                const apiKey = "AIzaSyAaPLMECxepGHN1lsNJee2jVWt0y4OEfus"; 
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                
+                if(outputElement) {
+                    outputElement.innerHTML = `<div class="flex justify-center items-center p-4"><div class="loader"></div><p class="ml-4">${outputElement.dataset.loadingText || 'AI is working...'}</p></div>`;
+                    outputElement.classList.remove('hidden');
+                }
+            
+                const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
+
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (!response.ok) {
+                        if (response.status === 503) throw new Error("The AI service is currently experiencing high traffic. Please wait a moment and try again.");
+                        throw new Error(`API Error: ${response.status}. Ensure your API key is valid.`);
+                    }
+                    const result = await response.json();
+                    
+                    if (result.candidates && result.candidates[0] && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts[0]) {
+                        const text = result.candidates[0].content.parts[0].text;
+                        onComplete(text);
+                    } else {
+                        if (result.promptFeedback && result.promptFeedback.blockReason) throw new Error(`Content blocked by safety policy: ${result.promptFeedback.blockReason}`);
+                        throw new Error("No valid content received from API.");
+                    }
+                } catch (error) {
+                    console.error("Gemini API Error:", error);
+                    if(outputElement) outputElement.innerHTML = `<p class="text-red-500 p-4 bg-red-50 rounded-lg">An error occurred: ${error.message}.</p>`;
+                }
+            }
+
+            document.getElementById('suggestTitlesBtn').addEventListener('click', () => {
+                const topicInput = document.getElementById('topicInput');
+                if (!topicInput.value.trim()) { alert('Please enter a topic first.'); return; }
+                const prompt = `Based on the research topic: "${topicInput.value.trim()}", generate 5 academic paper titles and a list of 10 relevant keywords.`;
+                callGemini(prompt, document.getElementById('titleSuggestionOutput'), (text) => {
+                    document.getElementById('titleSuggestionOutput').innerHTML = text.replace(/\n/g, '<br>');
+                });
+            });
+
+            document.getElementById('submitTopicBtn').addEventListener('click', () => {
+                const topicInput = document.getElementById('topicInput');
+                let topic = topicInput.value.trim();
+                if (!topic) {
+                    topic = "The Impact of Artificial Intelligence on Higher Education";
+                    topicInput.value = topic; 
+                }
+                researchData.topic = topic;
+                updateStepUI(2);
+            });
+            
+            document.getElementById('generateOutlineBtn').addEventListener('click', () => {
+                const prompt = `Generate a comprehensive IMRaD outline for a research paper on: "${researchData.topic}".`;
+                callGemini(prompt, document.getElementById('outlineLoader'), (text) => {
+                    document.getElementById('outlineLoader').classList.add('hidden');
+                    researchData.outline = text;
+                    document.getElementById('outlineTextarea').value = text;
+                    document.getElementById('outlineEditor').classList.remove('hidden');
+                });
+            });
+
+            document.getElementById('confirmOutlineBtn').addEventListener('click', () => {
+                researchData.outline = document.getElementById('outlineTextarea').value;
+                populateKeyPoints();
+                updateStepUI(3);
+            });
+
+            document.getElementById('suggestMethodologyBtn').addEventListener('click', () => {
+                const prompt = `For a research paper on "${researchData.topic}", suggest 3 potential research methodologies with brief justifications.`;
+                callGemini(prompt, document.getElementById('methodologySuggestionOutput'), (text) => {
+                    document.getElementById('methodologySuggestionOutput').innerHTML = text.replace(/\n/g, '<br>');
+                });
+            });
+
+            function populateKeyPoints() {
+                const keyPointsContainer = document.getElementById('keyPointsContainer');
+                keyPointsContainer.innerHTML = '';
+                const sections = researchData.outline.match(/^\s*(#+\s.*|\d+\..*|[IVX]+\..*)$/gm);
+                if(sections) {
+                    sections.forEach((sectionTitle, index) => {
+                        const cleanTitle = sectionTitle.replace(/#+\s*/, '').trim();
+                        researchData.keyPoints[cleanTitle] = '';
+                        const sectionEl = document.createElement('div');
+                        sectionEl.innerHTML = `<label for="kp-${index}" class="block text-md font-semibold text-gray-800 mb-2">${cleanTitle}</label><textarea id="kp-${index}" data-title="${cleanTitle}" rows="4" class="key-point-textarea w-full border-gray-300 rounded-lg" placeholder="Add key points, data..."></textarea>`;
+                        keyPointsContainer.appendChild(sectionEl);
+                    });
+                }
+            }
+
+            document.getElementById('confirmKeyPointsBtn').addEventListener('click', () => {
+                document.querySelectorAll('.key-point-textarea').forEach(ta => {
+                    researchData.keyPoints[ta.dataset.title] = ta.value.trim();
+                });
+                updateStepUI(4);
+            });
+            
+            document.getElementById('addAppendixBtn').addEventListener('click', () => {
+                const appendicesContainer = document.getElementById('appendicesContainer');
+                const appendixIndex = appendicesContainer.children.length;
+                const appendixEl = document.createElement('div');
+                appendixEl.innerHTML = `<label class="block text-md font-semibold text-gray-800 mb-2">Appendix ${String.fromCharCode(65 + appendixIndex)}</label><textarea class="appendix-input w-full border-gray-300 rounded-lg" rows="4" placeholder="Enter content for this appendix..."></textarea>`;
+                appendicesContainer.appendChild(appendixEl);
+            });
+
+            document.getElementById('confirmAppendicesBtn').addEventListener('click', () => {
+                const appendicesContainer = document.getElementById('appendicesContainer');
+                researchData.appendices = [];
+                appendicesContainer.querySelectorAll('.appendix-input').forEach(input => {
+                    if(input.value.trim()) researchData.appendices.push(input.value.trim());
+                });
+                updateStepUI(5);
+            });
+
+            const captchaModal = document.getElementById('captcha-modal');
+            const captchaQuestion = document.getElementById('captcha-question');
+            const captchaInput = document.getElementById('captcha-input');
+            const captchaSubmit = document.getElementById('captcha-submit');
+            const captchaCancel = document.getElementById('captcha-cancel');
+            const captchaError = document.getElementById('captcha-error');
+
+            function showCaptcha(onSuccess) {
+                const num1 = Math.floor(Math.random() * 10) + 1;
+                const num2 = Math.floor(Math.random() * 10) + 1;
+                captchaAnswer = num1 + num2;
+                captchaQuestion.textContent = `What is ${num1} + ${num2}?`;
+                captchaInput.value = '';
+                captchaError.classList.add('hidden');
+                captchaModal.classList.remove('hidden');
+
+                captchaSubmit.onclick = () => {
+                    if (parseInt(captchaInput.value) === captchaAnswer) {
+                        captchaModal.classList.add('hidden');
+                        onSuccess();
+                    } else {
+                        captchaError.classList.remove('hidden');
+                    }
+                };
+            }
+            captchaCancel.addEventListener('click', () => captchaModal.classList.add('hidden'));
+
+
+            document.getElementById('generatePaperBtn').addEventListener('click', () => {
+                showCaptcha(generatePaper);
+            });
+
+            function generatePaper() {
+                const finalOutput = document.getElementById('finalOutput');
+                finalOutput.dataset.loadingText = "Generating full paper... This may take a moment.";
+                let keyPointsString = Object.entries(researchData.keyPoints).map(([title, points]) => `Section: ${title}\nKey Points: ${points || 'N/A'}`).join('\n\n');
+                let appendicesString = researchData.appendices.length > 0 ? `The paper must include the following user-provided appendices at the end, formatted as "Appendix A", "Appendix B", etc.:\n${researchData.appendices.map((c, i) => `Appendix ${String.fromCharCode(65 + i)} Content:\n${c}`).join('\n\n')}` : "No appendices are requested.";
+
+                const finalPrompt = `
+                    You are an AI academic writing assistant. Your task is to generate a complete, high-quality research paper in a single response.
+                    **Primary Instructions:**
+                    1.  **Generate a Title:** Create a professional, academic title for the paper based on the topic.
+                    2.  **Generate an Abstract:** Write a concise 150-200 word abstract summarizing the paper.
+                    3.  **Draft the Full Paper:** Write the body of the paper based on the outline and key points. If key points for a section are empty, generate appropriate academic content for that section based on the topic and outline.
+                    4.  **Insert Citations:** As you write, insert in-text citations in (Author, Year) format where claims are made. Find real, relevant academic sources for these citations.
+                    5.  **AI-Suggested Visuals:** After drafting the content, analyze it and suggest 3 to 5 relevant figures or tables that would enhance the paper. For each, describe the visual and try to find a real source URL for data or a public-domain image. Present these suggestions as formatted placeholders like [SUGGESTED_FIGURE: Description | Source: URL] or [SUGGESTED_TABLE: Description | Source: URL] and insert them at the most logically relevant points in the text.
+                    6.  **Create a Reference List:** Conclude with a "References" section, listing full APA 7th edition details for all cited sources. Prefix each entry with "[VERIFIED] ".
+                    7.  **Create Appendices:** If appendices are provided by the user, add them after the reference list. If not, generate 1-2 sample appendices (like a glossary or survey questions) relevant to the topic.
+                    8.  **Format Well:** Use clear headings (like "1. Introduction", "1.1 Background"), subheadings, and paragraphs.
+                    **User-Provided Information:**
+                    - **Research Topic:** ${researchData.topic}
+                    - **Paper Outline:** \n${researchData.outline}
+                    - **Key Section Points:** \n${keyPointsString}
+                    - **User-Provided Appendices:** ${appendicesString}
+                    Please generate the complete, formatted paper now.
+                `;
+                
+                callGemini(finalPrompt, finalOutput, (text) => {
+                    renderFinalPaper(text);
+                });
+            }
+
+            function renderFinalPaper(text) {
+                 const finalOutput = document.getElementById('finalOutput');
+                 const downloadContainer = document.createElement('div');
+                downloadContainer.className = "relative mb-4";
+                downloadContainer.innerHTML = `<p class="text-center text-sm text-gray-500 mb-4 italic">Generated through AI Research Paper Wizard</p><button id="downloadBtn" class="bg-teal-600 text-white font-semibold py-2 px-4 rounded-lg shadow-md hover:bg-teal-700 transition"><i class="fas fa-download mr-2"></i>Download Report</button><div id="downloadMenu" class="absolute left-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 hidden"><a href="#" id="downloadDocBtn" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Download as Word (.doc)</a><a href="#" id="downloadPdfBtn" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Download as PDF (.pdf)</a></div><div id="download-status" class="mt-2 text-sm text-gray-600"></div>`;
+                finalOutput.innerHTML = ''; 
+                finalOutput.appendChild(downloadContainer);
+
+                const paperOutput = document.createElement('div');
+                paperOutput.className = 'final-paper-output';
+                paperOutput.id = 'paper-content-to-export';
+                let bodyHtml = '';
+                const lines = text.split('\n').filter(line => line.trim() !== '');
+                let isRefSection = false, isAppendixSection = false, refCounter = 1;
+                for (const line of lines) {
+                    const trimmedLine = line.trim();
+                    if (trimmedLine.toLowerCase().startsWith('title:')) { bodyHtml += `<h1>${trimmedLine.substring(6).trim()}</h1><p class="authors">Author Name, University Name</p>`; isRefSection = false; isAppendixSection = false; }
+                    else if (trimmedLine.toLowerCase().startsWith('abstract')) { bodyHtml += `<h2>Abstract</h2><div class="abstract">`; isRefSection = false; isAppendixSection = false; }
+                    else if (trimmedLine.toLowerCase().startsWith('references')) { if (!isRefSection && bodyHtml.includes('abstract')) bodyHtml += `</div>`; bodyHtml += `<h2>References</h2>`; isRefSection = true; isAppendixSection = false; }
+                    else if (trimmedLine.toLowerCase().startsWith('appendices') || trimmedLine.toLowerCase().startsWith('appendix a')) { bodyHtml += `<h2>Appendices</h2>`; isRefSection = false; isAppendixSection = true; if(!trimmedLine.toLowerCase().startsWith('appendices')) { bodyHtml += `<h3>${trimmedLine}</h3>`; } }
+                    else if (isRefSection && trimmedLine.startsWith('[VERIFIED]')) { bodyHtml += `<p><i class="fas fa-check-circle text-green-500 mr-2"></i><strong>${refCounter++}.</strong> ${trimmedLine.replace('[VERIFIED]', '').trim()}</p>`; }
+                    else if (isAppendixSection && trimmedLine.toLowerCase().startsWith('appendix ')){ bodyHtml += `<h3>${trimmedLine}</h3>`; }
+                    else if (trimmedLine.match(/^(\d+)\.\d+\s/)) { bodyHtml += `<h3>${trimmedLine}</h3>`; isRefSection = false; isAppendixSection = false; }
+                    else if (trimmedLine.match(/^(\d+|[IVX]+)\.\s/)) { bodyHtml += `<h2>${trimmedLine}</h2>`; isRefSection = false; isAppendixSection = false; }
+                    else if (trimmedLine.startsWith('[SUGGESTED_')) { 
+                        const visualMatch = trimmedLine.match(/\[SUGGESTED_(FIGURE|TABLE):\s*(.*?)\s*\|\s*Source:\s*(https?:\/\/[^\s\]]+)/);
+                        if(visualMatch){
+                           const type = visualMatch[1];
+                           const caption = visualMatch[2];
+                           let source = visualMatch[3];
+                           if (!source.startsWith('http')) { source = 'https://' + source; }
+                           bodyHtml += `<div class="visual-placeholder"><i class="fas fa-chart-bar mr-2"></i><strong>AI SUGGESTION:</strong> ${type} - ${caption}<br><a href="${source}" target="_blank" class="text-blue-500 text-xs hover:underline">${source}</a></div>`;
+                        } else {
+                           bodyHtml += `<p>${trimmedLine}</p>`;
+                        }
+                    }
+                    else { bodyHtml += `<p>${trimmedLine}</p>`; }
+                }
+                const disclaimerHtml = `<div class="disclaimer"><hr><p><strong>Disclaimer:</strong> This document was generated with the assistance of an AI-powered tool. It is intended for educational, brainstorming, and drafting purposes only and should not be submitted as final, original work without significant user revision and verification. The user assumes full responsibility for the accuracy, validity, and appropriateness of all content. The developers of this application accept no liability for any consequences arising from the use of this generated content.</p></div>`;
+                paperOutput.innerHTML = bodyHtml + disclaimerHtml;
+                finalOutput.appendChild(paperOutput);
+                
+                const downloadStatus = document.getElementById('download-status');
+                document.getElementById('downloadBtn').addEventListener('click', (e) => { e.stopPropagation(); document.getElementById('downloadMenu').classList.toggle('hidden'); });
+                document.addEventListener('click', () => { const menu = document.getElementById('downloadMenu'); if(menu && !menu.classList.contains('hidden')) { menu.classList.add('hidden'); } });
+                
+                document.getElementById('downloadDocBtn').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    downloadStatus.textContent = 'Preparing Word document...';
+                    const paperContent = paperOutput.innerHTML;
+                    const styles = `<style>body{font-family:'Times New Roman',serif;line-height:1.5;}h1{font-size:16pt;font-weight:bold;text-align:center;}h2{font-size:14pt;font-weight:bold;margin-top:24px;border-bottom:1px solid #ccc;padding-bottom:4px;}h3{font-size:12pt;font-weight:bold;margin-top:18px;}p{margin-bottom:12px;}.authors,.abstract{font-style:italic;}.visual-placeholder{border:1px solid #000;padding:10px;text-align:center;margin:12px 0;}.disclaimer{font-size:9pt;font-style:italic;color:#555;}</style>`;
+                    const htmlToExport = `<!DOCTYPE html><html><head><meta charset="UTF-8">${styles}</head><body>${paperContent}</body></html>`;
+                    const blob = new Blob(['\ufeff', htmlToExport], { type: 'application/msword' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = 'research-paper.doc';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                    document.getElementById('downloadMenu').classList.add('hidden');
+                    downloadStatus.textContent = '';
+                });
+
+                document.getElementById('downloadPdfBtn').addEventListener('click', (e) => {
+                    e.preventDefault();
+                    downloadStatus.textContent = 'Generating PDF, this may take a moment...';
+                    const element = paperOutput;
+                    const opt = { margin: 0.5, filename: 'research-paper.pdf', image: { type: 'jpeg', quality: 0.98 }, html2canvas:  { scale: 2 }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } };
+                    html2pdf().set(opt).from(element).save().then(() => {
+                       downloadStatus.textContent = '';
+                    });
+                    document.getElementById('downloadMenu').classList.add('hidden');
+                });
+            }
+            
+            updateStepUI(1);
+        });
+    </script>
+</body>
+</html>
